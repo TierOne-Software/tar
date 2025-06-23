@@ -1,0 +1,14 @@
+[settings]
+arch=x86_64
+compiler=clang
+compiler.cppstd=23
+compiler.libcxx=libc++
+compiler.version=20
+os=Linux
+
+[buildenv]
+CC=/usr/bin/clang-20
+CXX=/usr/bin/clang++-20
+AR=/usr/bin/ar-20
+RANLIB=/usr/bin/ranlib-20
+LD=/usr/bin/ld-20

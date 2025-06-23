@@ -1,0 +1,4 @@
+include(.conan-profile-base)
+
+[settings]
+build_type=Release

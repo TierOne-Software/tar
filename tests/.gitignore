@@ -1,0 +1,14 @@
+# Generated test files
+fixtures/extracted*/
+fixtures/test_*.tar
+fixtures/test_*.bin
+fixtures/*.tmp
+
+# Build artifacts in test directory  
+build/
+cmake-build-*/
+
+# Temporary test files
+*.tmp
+core
+core.*
