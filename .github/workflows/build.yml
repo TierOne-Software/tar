@@ -1,4 +1,4 @@
-name: Build tierkit-archive
+name: Build tierone-tar
 
 on:
   push:

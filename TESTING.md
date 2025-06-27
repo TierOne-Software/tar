@@ -32,8 +32,7 @@ tests/
 │   ├── *.tar                   # Test archive files  
 │   ├── *.bin                   # Test binary files
 │   └── extracted*/             # Extracted test directories
-├── data/                       # Static test data (version controlled)
-│   └── srec-utilities.tar      # Reference archive
+├── data/                       # Static test data (version controlled, currently empty)
 └── test_*.cpp                  # C++ unit tests (Catch2)
 ```
 
