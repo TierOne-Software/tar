@@ -69,8 +69,7 @@ The library supports multiple stream types:
 
 - C++23 compatible compiler (Clang 19+ or 20+ recommended)
 - CMake 3.25+ (for building)
-- Catch2 3.6.0 (for building tests)
-- Conan 2.0.5+ (for installing Catch2)
+- Catch2 3.6.0 (for building tests, fetched via CMake)
 
 ### Supported Platforms
 
@@ -81,18 +80,14 @@ The library supports multiple stream types:
 
 - **Clang 19+**: Full support, CI tested
 - **Clang 20+**: Full support, CI tested
-- **GCC**: Limited support (GCC 13 lacks std::print support)
+- **GCC**: Untested, GCC-14 and GCC-15 should work
 
 ### Build Instructions
 
-Conan profiles and CMake toolchains are optional but provide control on what
+CMake toolchains are optional but provide control on what
 compiler to use.
 
 ```bash
-conan install . --build=missing \
-  --profile=.conan-profile-debug \
-  --profile:build=.conan-profile-debug \
-  --output-folder=cmake-build-debug
 cmake -B cmake-build-debug -S . \
   -DCMAKE_TOOLCHAIN_FILE=toolchainfile-amd64-clang20.cmake \
   -DCMAKE_BUILD_TYPE=Debug
@@ -157,17 +152,14 @@ See [examples/README.md](examples/README.md)
 - Streaming archive reader with iterator support
 - Memory-mapped and file-based streams
 - Entry extraction to filesystem
-- Comprehensive test suite including GNU tar tests
+- Comprehensive test suite
 - Example applications demonstrating both POSIX and GNU formats
-- Basic GNU sparse file support (old format with octal sparse maps)
-- Sparse file infrastructure (sparse metadata, sparse-aware readers)
+- GNU sparse file support (0.0 and 1.0)
 
 🚧 **Future Enhancements:**
-- Full GNU sparse file support (modern binary formats)
-- PAX format support (including PAX sparse format)
 - Archive writing capabilities
-- Compression integration (zstd, gzip)
-- Async I/O support
+  - If this receives enough requests. On embedded Linux the most common
+  use case is reading and extracting.
 
 ## Architecture
 
@@ -193,7 +185,7 @@ We welcome contributions to TierOne Tar! Here's how you can help:
 ### Submitting Changes
 
 1. Fork the repository on GitHub
-2. Create a feature branch from `main`
+2. Create a feature branch from `master`
 3. Make your changes with appropriate tests
 4. Ensure all tests pass and code follows the existing style
 5. Submit a pull request with a clear description of your changes
@@ -203,7 +195,7 @@ We welcome contributions to TierOne Tar! Here's how you can help:
 - Follow the existing code style and naming conventions
 - Add tests for new features or bug fixes
 - Update documentation for API changes
-- Use modern C++23 features appropriately
+- Use modern C++ features appropriately
 - Ensure compatibility with supported compilers (Clang 19+)
 
 ### Reporting Issues

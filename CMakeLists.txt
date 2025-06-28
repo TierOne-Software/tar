@@ -1,4 +1,12 @@
 cmake_minimum_required(VERSION 3.25)
+
+# Setup Hunter package manager
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/HunterGate.cmake")
+HunterGate(
+    URL "https://github.com/cpp-pm/hunter/archive/v0.26.1.tar.gz"
+    SHA1 "e41ac7a18c49b35ebac99ff2b5244317b2638a65"
+)
+
 project(tierone-tar VERSION 0.1.0 LANGUAGES CXX)
 
 # Set default build type to Debug if not specified
@@ -6,23 +14,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build" FORCE)
 endif()
 set(CMAKE_BUILD_TYPE Debug)
-# Include Conan-generated toolchain first (if available)
-set(CONAN_TOOLCHAIN "${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators/conan_toolchain.cmake")
-if(EXISTS "${CONAN_TOOLCHAIN}")
-    include(${CONAN_TOOLCHAIN})
-else()
-    message(WARNING "Conan toolchain not found at ${CONAN_TOOLCHAIN}, building without Conan")
-endif()
-
-# Our Toolchain file, if provided
-if(CMAKE_TOOLCHAIN_FILE)
-    include(${CMAKE_TOOLCHAIN_FILE})
-endif()
-
-# Add Conan-generated CMake files to the prefix path
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators")
-
-set(Catch2_DIR "${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/generators")
 
 # Require C++23
 set(CMAKE_CXX_STANDARD 23)
@@ -32,20 +23,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Export compile commands for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find dependencies
-find_package(Catch2 CONFIG)
-if(Catch2_FOUND)
-    message(STATUS "Catch2 found via CONFIG")
-    message(STATUS "Catch2 include dirs: ${Catch2_INCLUDE_DIRS}")
-else()
-    find_package(Catch2 QUIET)
-    if(Catch2_FOUND)
-        message(STATUS "Catch2 found via system package")
-    else()
-        message(WARNING "Catch2 not found - tests will be disabled")
-        set(TIERONE_TAR_BUILD_TESTS OFF)
-    endif()
-endif()
+# Dependencies
+include(FetchContent)
+
+# Catch2 v3.6.0
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.6.0
+)
+FetchContent_MakeAvailable(Catch2)
+
 
 # Options
 option(TIERONE_TAR_BUILD_TESTS "Build tests" ON)
@@ -78,6 +66,7 @@ target_include_directories(tierone-tar
 
 # Compile features
 target_compile_features(tierone-tar PUBLIC cxx_std_23)
+
 
 # Find required dependencies
 find_package(Threads REQUIRED)

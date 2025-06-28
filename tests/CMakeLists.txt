@@ -1,5 +1,3 @@
-find_package(Catch2 3 REQUIRED)
-
 add_executable(tierone-tar-tests
     test_header_parser.cpp
     test_header_parser_edge_cases.cpp

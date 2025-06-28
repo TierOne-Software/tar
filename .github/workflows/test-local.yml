@@ -30,7 +30,7 @@ jobs:
             cmake \
             ninja-build \
             make \
-            python3-pip \
+            git \
             clang-20 \
             libc++-20-dev \
             libc++abi-20-dev \
@@ -40,38 +40,13 @@ jobs:
             sudo
           
           # Give builder user access to the project
-          chown -R builder:builder /home/mj/workspace/hennypenny/tier1/tierkit-archive
+          sudo chown -R builder:builder ${{ github.workspace }}
       
-      - name: Install Conan as builder user
-        run: |
-          sudo -u builder bash -c "
-            cd /home/mj/workspace/hennypenny/tier1/tierkit-archive
-            pip install --user 'conan>=2.0'
-            ~/.local/bin/conan profile detect --force
-          "
-      
-      - name: Configure Conan profile for Clang as builder user
-        run: |
-          sudo -u builder tee /home/builder/.conan2/profiles/default > /dev/null << 'EOF'
-          [settings]
-          os=Linux
-          arch=x86_64
-          compiler=clang
-          compiler.version=20
-          compiler.libcxx=libc++
-          compiler.cppstd=23
-          build_type=Debug
-          
-          [buildenv]
-          CC=clang-20
-          CXX=clang++-20
-          EOF
       
       - name: Build and test as builder user
         run: |
           sudo -u builder bash -c '
-            cd /home/mj/workspace/hennypenny/tier1/tierkit-archive
-            export PATH=$HOME/.local/bin:$PATH
+            cd ${{ github.workspace }}
             
             echo "Verifying Clang installation..."
             clang++-20 --version
@@ -82,37 +57,16 @@ jobs:
             clang++-20 -stdlib=libc++ -std=c++23 /tmp/test_expected.cpp -o /tmp/test_expected
             echo "C++23 test passed!"
             
-            echo "Checking Conan profile..."
-            cat ~/.conan2/profiles/default
-            
             mkdir -p build
-            
-            echo "Installing dependencies with Conan..."
-            conan install . --output-folder=build --build=missing \
-              -s build_type=Debug \
-              -s compiler.cppstd=23 \
-              -c tools.cmake.cmaketoolchain:generator="Ninja"
-            
-            # Find the toolchain file
-            TOOLCHAIN_FILE=$(find build -name "conan_toolchain.cmake" | head -1)
-            echo "Found toolchain at: $TOOLCHAIN_FILE"
-            
-            if [ -n "$TOOLCHAIN_FILE" ]; then
-              TOOLCHAIN_ARG="-DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE"
-            else
-              echo "Warning: No toolchain file found, proceeding without Conan"
-              TOOLCHAIN_ARG=""
-            fi
             
             echo "Configuring with CMake..."
             cmake -B build -S . \
               -G Ninja \
               -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_TOOLCHAIN_FILE=toolchainfile-amd64-clang20.cmake \
               -DCMAKE_C_COMPILER=clang-20 \
               -DCMAKE_CXX_COMPILER=clang++-20 \
-              -DCMAKE_CXX_STANDARD=23 \
-              -DCMAKE_CXX_FLAGS="-stdlib=libc++" \
-              $TOOLCHAIN_ARG
+              -DCMAKE_CXX_STANDARD=23
               
             echo "Building..."
             cmake --build build -j$(nproc)

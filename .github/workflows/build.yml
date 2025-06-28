@@ -13,8 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-          - { name: "clang-19", cc: "clang-19", cxx: "clang++-19", conan_compiler: "clang", conan_version: "19" }
-          - { name: "clang-20", cc: "clang-20", cxx: "clang++-20", conan_compiler: "clang", conan_version: "20" }
+          - { name: "clang-19", cc: "clang-19", cxx: "clang++-19", version: "19" }
+          - { name: "clang-20", cc: "clang-20", cxx: "clang++-20", version: "20" }
         build_type: [Release, Debug]
 
     name: Build with ${{ matrix.compiler.name }} (${{ matrix.build_type }})
@@ -35,7 +35,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             cmake \
             ninja-build \
-            python3-pip \
+            git \
             wget \
             tar \
             coreutils \
@@ -44,78 +44,32 @@ jobs:
       - name: Install compiler toolchain
         run: |
           # Install LLVM/Clang
-          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${{ matrix.compiler.conan_version }}
+          wget -qO- https://apt.llvm.org/llvm.sh | sudo bash -s -- ${{ matrix.compiler.version }}
           sudo apt-get install -y --no-install-recommends \
-            libc++-${{ matrix.compiler.conan_version }}-dev \
-            libc++abi-${{ matrix.compiler.conan_version }}-dev
+            libc++-${{ matrix.compiler.version }}-dev \
+            libc++abi-${{ matrix.compiler.version }}-dev
           
           # Give builder user access to the project
-          chown -R builder:builder /home/mj/workspace/hennypenny/tier1/tierkit-archive
+          sudo chown -R builder:builder ${{ github.workspace }}
 
-      - name: Install Conan as builder user
-        run: |
-          sudo -u builder bash -c "
-            cd /home/mj/workspace/hennypenny/tier1/tierkit-archive
-            pip install --user 'conan>=2.0'
-            ~/.local/bin/conan profile detect --force
-          "
-
-      - name: Configure Conan profile
-        run: |
-          sudo -u builder tee /home/builder/.conan2/profiles/default > /dev/null << EOF
-          [settings]
-          os=Linux
-          arch=x86_64
-          compiler=${{ matrix.compiler.conan_compiler }}
-          compiler.version=${{ matrix.compiler.conan_version }}
-          compiler.libcxx=libc++
-          compiler.cppstd=23
-          build_type=${{ matrix.build_type }}
-          
-          [buildenv]
-          CC=${{ matrix.compiler.cc }}
-          CXX=${{ matrix.compiler.cxx }}
-          EOF
 
       - name: Build and test as builder user
         run: |
           sudo -u builder bash -c '
-            cd /home/mj/workspace/hennypenny/tier1/tierkit-archive
-            export PATH=$HOME/.local/bin:$PATH
-            
-            # Set compiler flags for Clang with libc++
-            export CXXFLAGS="-stdlib=libc++"
-            export LDFLAGS="-stdlib=libc++"
+            cd ${{ github.workspace }}
             
             echo "Building with ${{ matrix.compiler.name }} in ${{ matrix.build_type }} mode..."
             
             mkdir -p build
             
-            echo "Installing dependencies with Conan..."
-            conan install . --output-folder=build --build=missing \
-              -s build_type=${{ matrix.build_type }} \
-              -s compiler.cppstd=23 \
-              -c tools.cmake.cmaketoolchain:generator="Ninja"
-            
-            # Find the toolchain file
-            TOOLCHAIN_FILE=$(find build -name "conan_toolchain.cmake" | head -1)
-            echo "Found toolchain at: $TOOLCHAIN_FILE"
-            
-            if [ -n "$TOOLCHAIN_FILE" ]; then
-              TOOLCHAIN_ARG="-DCMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE"
-            else
-              echo "Warning: No toolchain file found, proceeding without Conan"
-              TOOLCHAIN_ARG=""
-            fi
-            
             echo "Configuring with CMake..."
             cmake -B build -S . \
               -G Ninja \
               -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_TOOLCHAIN_FILE=toolchainfile-amd64-clang${{ matrix.compiler.version }}.cmake \
               -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
               -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
-              -DCMAKE_CXX_STANDARD=23 \
-              $TOOLCHAIN_ARG
+              -DCMAKE_CXX_STANDARD=23
               
             echo "Building..."
             cmake --build build -j$(nproc)
